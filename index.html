@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#1e293b">
+  <title>Task Management System by Arif</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TMS Arif">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: #e2e8f0; color: #0f172a; padding-bottom: 90px; }
+    
+    /* Header & Stats */
+    .header { background: #1e293b; color: white; padding: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .header h2 { font-size: 1.05rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    .refresh-btn { background: rgba(255,255,255,0.15); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
+    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+    .stat-card { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 6px; text-align: center; }
+    .stat-card .num { font-size: 1.05rem; font-weight: bold; }
+    .stat-card .label { font-size: 0.65rem; color: #94a3b8; }
+    
+    /* Filters */
+    .filter-bar { padding: 12px 14px; background: white; border-bottom: 1px solid #cbd5e1; display: flex; gap: 8px; }
+    .filter-bar input, .filter-bar select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none; background: #f8fafc; }
+    
+    .status-tabs { display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; background: white; border-bottom: 1px solid #cbd5e1; }
+    .tab { padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569; white-space: nowrap; cursor: pointer; border: 1px solid #cbd5e1; }
+    .tab.active { background: #0f172a; color: white; border-color: #0f172a; }
+    
+    /* Task Cards - Full Colored Backgrounds */
+    .task-list { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+    
+    .card { 
+      background: #ffffff; 
+      border-radius: 12px; 
+      padding: 14px; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08); 
+      border: 1px solid #cbd5e1;
+      border-left: 6px solid #64748b; 
+    }
+    
+    /* In Progress = Light Yellow */
+    .card.in-progress { 
+      background: #fef9c3; 
+      border-color: #fde047;
+      border-left: 6px solid #ca8a04; 
+    }
+    
+    /* Hold = Light Purple */
+    .card.hold { 
+      background: #f3e8ff; 
+      border-color: #d8b4fe;
+      border-left: 6px solid #9333ea; 
+    }
+    
+    /* Completed = Light Green */
+    .card.completed { 
+      background: #dcfce7; 
+      border-color: #86efac;
+      border-left: 6px solid #16a34a; 
+    }
+    
+    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .badge { font-size: 0.72rem; padding: 4px 10px; border-radius: 12px; font-weight: 700; }
+    .badge-unit { background: rgba(255,255,255,0.85); color: #0369a1; border: 1px solid rgba(3,105,161,0.2); }
+    
+    .status-in-progress { background: #eab308; color: #ffffff; }
+    .status-hold { background: #9333ea; color: #ffffff; }
+    .status-completed { background: #16a34a; color: #ffffff; }
+    .status-todo { background: #64748b; color: #ffffff; }
+    
+    .desc { font-size: 0.92rem; font-weight: 600; line-height: 1.45; color: #0f172a; margin-bottom: 10px; }
+    .meta { font-size: 0.78rem; color: #334155; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 12px; }
+    .date-log { background: rgba(255,255,255,0.75); border: 1px dashed rgba(0,0,0,0.2); border-radius: 6px; padding: 6px 10px; font-size: 0.73rem; color: #1e293b; margin-bottom: 10px; line-height: 1.5; }
+    
+    /* Action Buttons inside Card */
+    .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
+    .btn-act { padding: 9px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .btn-prog { background: #ffffff; color: #b45309; border: 1px solid #f59e0b; }
+    .btn-hold { background: #ffffff; color: #7e22ce; border: 1px solid #a855f7; }
+    .btn-done { background: #ffffff; color: #15803d; border: 1px solid #22c55e; }
+    
+    /* Disabled state for Completed tasks */
+    .btn-act:disabled {
+      background: rgba(255,255,255,0.45);
+      color: #94a3b8;
+      border-color: #cbd5e1;
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.6;
+    }
+    
+    /* Floating Add Button */
+    .fab { position: fixed; bottom: 22px; right: 22px; width: 56px; height: 56px; border-radius: 50%; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 12px rgba(2,132,199,0.5); cursor: pointer; z-index: 150; }
+    
+    /* Modal */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: flex-end; }
+    .modal-content { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
+    .btn-submit { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; margin-top: 10px; cursor: pointer; }
+    
+    .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.75); color: white; z-index: 300; justify-content: center; align-items: center; font-weight: 600; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h2>
+      <span>🏭 Task Management System by Arif</span>
+      <span class="refresh-btn" onclick="fetchData()">🔄 Refresh</span>
+    </h2>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="num" id="cnt-total">0</div><div class="label">Total</div></div>
+      <div class="stat-card"><div class="num" id="cnt-prog" style="color:#fde047;">0</div><div class="label">Prog</div></div>
+      <div class="stat-card"><div class="num" id="cnt-hold" style="color:#d8b4fe;">0</div><div class="label">Hold</div></div>
+      <div class="stat-card"><div class="num" id="cnt-done" style="color:#86efac;">0</div><div class="label">Done</div></div>
+      <div class="stat-card"><div class="num" id="cnt-pending" style="color:#cbd5e1;">0</div><div class="label">To-Do</div></div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" id="search-input" placeholder="🔍 Search task, Sr. or name..." oninput="renderTasks()">
+    <select id="unit-filter" onchange="renderTasks()">
+      <option value="">All Units</option>
+    </select>
+  </div>
+
+  <div class="status-tabs">
+    <div class="tab active" onclick="setTab('All', this)">All</div>
+    <div class="tab" onclick="setTab('In Progress', this)">🟨 In Progress</div>
+    <div class="tab" onclick="setTab('Hold', this)">🟪 Hold</div>
+    <div class="tab" onclick="setTab('To Do', this)">⬜ To Do</div>
+    <div class="tab" onclick="setTab('Completed', this)">🟩 Completed</div>
+  </div>
+
+  <div class="task-list" id="task-container">
+    <div style="text-align:center; padding: 40px; color:#64748b;">Loading tasks...</div>
+  </div>
+
+  <div class="fab" onclick="openModal()">+</div>
+
+  <div class="modal" id="task-modal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3>Add New Task</h3>
+        <span style="font-size:1.4rem; cursor:pointer; padding:4px;" onclick="closeModal()">✕</span>
+      </div>
+      <form id="new-task-form" onsubmit="submitNewTask(event)">
+        <div class="form-group">
+          <label>Work Description</label>
+          <textarea name="desc" rows="3" required placeholder="Write detailed work description..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Unit</label>
+          <input type="text" name="unit" list="unit-list" required placeholder="e.g. Adhesive, Brine, H2O2 Unit...">
+          <datalist id="unit-list"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="To Do">To Do</option>
+            <option value="In Progress">In Progress</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Responsible Person</label>
+          <input type="text" name="person" list="officer-list" placeholder="Officer Name">
+          <datalist id="officer-list"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Assign Group</label>
+          <input type="text" name="assignGroup" list="assign-list" placeholder="e.g. Mohiuddin, Sumon, Lablu...">
+          <datalist id="assign-list"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Comments</label>
+          <input type="text" name="comments" placeholder="Optional notes...">
+        </div>
+        <button type="submit" class="btn-submit">Save Task</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="loading-overlay" id="loader">🔄 Updating Sheet...</div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzQl-atkFQlhXCMm10KSDdR8XnIOvwSqmRrqTyIptCKen6RNpChbGRMxcAYnY6WSpnk/exec";
+    
+    let allTasks = [];
+    let currentTab = 'All';
+
+    window.onload = function() {
+      fetchData();
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    // Data is always read/written through the Apps Script URL (works outside Google)
+    function apiGet() {
+      return fetch(API_URL + "?action=api&t=" + Date.now()).then(res => res.json());
+    }
+    function apiPost(payload) {
+      // text/plain body = no CORS preflight, which Apps Script cannot answer
+      return fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      }).then(res => res.json());
+    }
+
+    function showLoader(show) {
+      document.getElementById('loader').style.display = show ? 'flex' : 'none';
+    }
+
+    function fetchData() {
+      showLoader(true);
+      apiGet().then(onDataLoaded).catch(onError);
+    }
+
+    function onDataLoaded(data) {
+      showLoader(false);
+      allTasks = data.tasks || [];
+      
+      document.getElementById('cnt-total').innerText = data.counts.total;
+      document.getElementById('cnt-prog').innerText = data.counts.inProgress;
+      document.getElementById('cnt-hold').innerText = data.counts.hold;
+      document.getElementById('cnt-done').innerText = data.counts.completed;
+      document.getElementById('cnt-pending').innerText = data.counts.pending;
+      
+      const unitSelect = document.getElementById('unit-filter');
+      const unitDatalist = document.getElementById('unit-list');
+      const prevUnit = unitSelect.value;
+      unitSelect.innerHTML = '<option value="">All Units</option>';
+      unitDatalist.innerHTML = '';
+      
+      (data.units || []).forEach(u => {
+        unitSelect.innerHTML += `<option value="${u}">${u}</option>`;
+        unitDatalist.innerHTML += `<option value="${u}">`;
+      });
+      unitSelect.value = prevUnit;
+
+      // Populate Assign Group & Responsible Person dropdown lists dynamically
+      const assignSet = new Set();
+      const officerSet = new Set();
+      allTasks.forEach(t => {
+        if (t.assignGroup) assignSet.add(t.assignGroup);
+        if (t.person) officerSet.add(t.person);
+      });
+
+      const assignDatalist = document.getElementById('assign-list');
+      assignDatalist.innerHTML = '';
+      Array.from(assignSet).sort().forEach(a => {
+        assignDatalist.innerHTML += `<option value="${a}">`;
+      });
+
+      const officerDatalist = document.getElementById('officer-list');
+      officerDatalist.innerHTML = '';
+      Array.from(officerSet).sort().forEach(o => {
+        officerDatalist.innerHTML += `<option value="${o}">`;
+      });
+      
+      renderTasks();
+    }
+
+    function setTab(tab, el) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      renderTasks();
+    }
+
+    function renderTasks() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const selectedUnit = document.getElementById('unit-filter').value;
+      const container = document.getElementById('task-container');
+      
+      const filtered = allTasks.filter(t => {
+        const matchSearch = t.desc.toLowerCase().includes(search) || 
+                            t.person.toLowerCase().includes(search) || 
+                            t.assignGroup.toLowerCase().includes(search) || 
+                            t.sr.toString().includes(search);
+        const matchUnit = !selectedUnit || t.unit === selectedUnit;
+        const matchTab = (currentTab === 'All') || 
+                         (currentTab === 'To Do' && (t.status === 'To Do' || !t.status)) ||
+                         (t.status === currentTab);
+        return matchSearch && matchUnit && matchTab;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding: 40px; color:#64748b;">No tasks found!</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(t => {
+        let cardClass = '';
+        let badgeClass = 'status-todo';
+        const isCompleted = (t.status === 'Completed');
+
+        if (t.status === 'In Progress') { cardClass = 'in-progress'; badgeClass = 'status-in-progress'; }
+        else if (t.status === 'Hold') { cardClass = 'hold'; badgeClass = 'status-hold'; }
+        else if (isCompleted) { cardClass = 'completed'; badgeClass = 'status-completed'; }
+
+        let dateLogs = [];
+        if (t.inProgressDate) dateLogs.push(`<b>In Progress:</b> ${t.inProgressDate.replace(/\n/g, ', ')}`);
+        if (t.holdDate) dateLogs.push(`<b>Hold:</b> ${t.holdDate.replace(/\n/g, ', ')}`);
+        if (t.completedDate) dateLogs.push(`<b>Completed:</b> ${t.completedDate}`);
+
+        return `
+          <div class="card ${cardClass}">
+            <div class="card-top">
+              <span style="font-weight:800; color:#1e293b;">#${t.sr}</span>
+              <span class="badge badge-unit">${t.unit || 'General'}</span>
+              <span class="badge ${badgeClass}">${t.status || 'To Do'}</span>
+            </div>
+            <div class="desc">${t.desc}</div>
+            <div class="meta">
+              ${t.person ? `<span>👤 <b>Officer:</b> ${t.person}</span>` : ''}
+              <span>👷 <b>Assign:</b> ${t.assignGroup || 'Unassigned'}</span>
+            </div>
+            ${dateLogs.length ? `<div class="date-log">📅 ${dateLogs.join('<br>📅 ')}</div>` : ''}
+            ${t.comments ? `<div style="font-size:0.75rem; color:#b91c1c; font-weight:600; margin-bottom:8px;">💬 ${t.comments}</div>` : ''}
+            <div class="actions">
+              <button class="btn-act btn-prog" ${isCompleted ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'In Progress')">▶ In Progress</button>
+              <button class="btn-act btn-hold" ${isCompleted ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'Hold')">⏸ Hold</button>
+              <button class="btn-act btn-done" ${isCompleted ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'Completed')">✔ Complete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function changeStatus(rowIndex, status) {
+      showLoader(true);
+      apiPost({ action: 'updateStatus', rowIndex: rowIndex, newStatus: status })
+        .then(onDataLoaded).catch(onError);
+    }
+
+    function openModal() { document.getElementById('task-modal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('task-modal').style.display = 'none'; }
+
+    function submitNewTask(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        desc: form.desc.value,
+        unit: form.unit.value,
+        status: form.status.value,
+        person: form.person.value,
+        assignGroup: form.assignGroup.value,
+        comments: form.comments.value
+      };
+      closeModal();
+      showLoader(true);
+      
+      apiPost({ action: 'addNewTask', form: data })
+        .then(res => { form.reset(); onDataLoaded(res); })
+        .catch(onError);
+    }
+
+    function onError(err) {
+      showLoader(false);
+      console.error(err);
+      alert('Connection error!\n\n১. ইন্টারনেট চেক করুন\n২. Apps Script Deploy-এ "Who has access" = Anyone আছে কিনা দেখুন\n৩. index.html-এর API_URL সঠিক /exec লিংক কিনা দেখুন');
+    }
+  </script>
+</body>
+</html>
