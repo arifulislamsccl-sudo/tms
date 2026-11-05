@@ -35,7 +35,7 @@
     .lock-icon { font-size: 2.6rem; margin-bottom: 8px; }
     .lock-card h3 { font-size: 1.15rem; margin-bottom: 6px; color: #1e293b; }
     .lock-card p { font-size: 0.8rem; color: #64748b; margin-bottom: 16px; line-height: 1.4; }
-    .pending-box { display: none; background: #fef9c3; border: 1px solid #fde047; color: #854d0e; padding: 12px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; margin-bottom: 16px; line-height: 1.4; }
+    .pending-box { display: none; background: #fef9c3; border: 1px solid #fde047; color: #854d0e; padding: 14px; border-radius: 10px; font-size: 0.84rem; font-weight: 600; margin-bottom: 16px; line-height: 1.45; }
     .blocked-box { display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; margin-bottom: 16px; }
 
     /* Header & Stats */
@@ -102,7 +102,7 @@
     .chip { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 16px; padding: 5px 11px; font-size: 0.75rem; font-weight: 600; color: #334155; cursor: pointer; }
     
     .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; background: #f8fafc; }
-    .btn-sm { padding: 5px 10px; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; color: white; }
+    .btn-sm { padding: 6px 10px; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; color: white; }
 
     .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.85); color: white; z-index: 400; justify-content: center; align-items: center; font-weight: 600; font-size: 0.95rem; }
   </style>
@@ -118,8 +118,9 @@
 
       <!-- Shown when user already sent a request and is waiting -->
       <div class="pending-box" id="pending-box">
-        ⏳ Your request is waiting for Admin approval.<br>
-        <button type="button" onclick="fetchData()" style="margin-top:8px; padding:6px 12px; background:#ca8a04; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer;">🔄 Check Approval Status</button>
+        ✅ Request Sent Successfully!<br>
+        ⏳ Waiting for Admin approval.<br>
+        <button type="button" onclick="fetchData()" style="margin-top:10px; padding:7px 14px; background:#ca8a04; color:white; border:none; border-radius:6px; font-weight:700; cursor:pointer;">🔄 Check Approval Status</button>
       </div>
 
       <!-- Shown if user is blocked -->
@@ -127,14 +128,14 @@
         🚫 Your access has been restricted by Admin.
       </div>
 
-      <form onsubmit="submitAccessRequest(event)">
+      <form id="access-req-form" onsubmit="submitAccessRequest(event)">
         <div class="form-group">
           <label>Your Name</label>
           <input type="text" id="req-name" required placeholder="e.g. Mohiuddin, Sumon...">
         </div>
         <div class="form-group">
-          <label>Mobile Number / ID</label>
-          <input type="text" id="req-phone" required placeholder="e.g. 017XXXXXXXX">
+          <label>Email Address</label>
+          <input type="email" id="req-phone" required placeholder="e.g. example@gmail.com">
         </div>
         <button type="submit" class="btn-submit">🔑 Request Access / Login</button>
       </form>
@@ -197,7 +198,7 @@
         <h3>👑 Admin Permission Control</h3>
         <span style="font-size:1.4rem; cursor:pointer;" onclick="closeAdminModal()">✕</span>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="admin-pin-box">
         <label>Enter Admin PIN</label>
         <div style="display:flex; gap:8px;">
           <input type="password" id="admin-pin-input" placeholder="Enter Admin PIN">
@@ -274,7 +275,7 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyuBzd3SIWpXY8pPfOe_zs6dcEAC9c4TEJERSdNY5L1aShUEqSP1E28DYTEe4LyHB6B/exec";
-    const ADMIN_SECRET = "12787"; // আপনার অ্যাডমিন পিন
+    const ADMIN_SECRET = "12787"; // 👑 এখানে আপনার নতুন অ্যাডমিন পাসওয়ার্ড দিন
     
     let allTasks = [];
     let allUsers = [];
@@ -282,6 +283,11 @@
     let myPhone = localStorage.getItem('tms_user_phone') || '';
     let myName = localStorage.getItem('tms_user_name') || '';
     let isEditor = false;
+
+    function normEmail(val) {
+      if (!val) return "";
+      return val.toString().toLowerCase().trim();
+    }
 
     window.onload = function() {
       document.getElementById('req-name').value = myName;
@@ -293,15 +299,21 @@
       document.getElementById('loader').style.display = show ? 'flex' : 'none';
     }
 
-    function fetchData() {
+    function callApi(paramsObj, callback) {
       showLoader(true);
+      const qs = Object.keys(paramsObj).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(paramsObj[k])).join("&");
+      fetch(API_URL + "?" + qs)
+        .then(res => res.json())
+        .then(callback)
+        .catch(onError);
+    }
+
+    function fetchData() {
       if (typeof google !== 'undefined' && google.script && google.script.run) {
+        showLoader(true);
         google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).getInitialData();
       } else {
-        fetch(API_URL + "?action=api")
-          .then(res => res.json())
-          .then(onDataLoaded)
-          .catch(onError);
+        callApi({ action: 'api' }, onDataLoaded);
       }
     }
 
@@ -318,7 +330,8 @@
           document.getElementById('user-info-text').innerText = "👑 Admin: Arif";
           document.getElementById('role-badge').innerText = "Admin";
         } else {
-          const found = allUsers.find(u => u.phone === myPhone);
+          const target = normEmail(myPhone);
+          const found = allUsers.find(u => normEmail(u.phone) === target);
           if (found) {
             myName = found.name;
             if (found.status === 'Approved') {
@@ -334,7 +347,6 @@
         }
       }
 
-      // যদি পারমিশন না থাকে, তবে মেইন অ্যাপ পুরোপুরি লুকিয়ে লক স্ক্রিন দেখাবে
       if (isEditor) {
         document.getElementById('lock-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
@@ -353,7 +365,7 @@
       checkMyPermission();
       renderAdminUserList();
 
-      if (!isEditor) return; // পারমিশন না থাকলে ভেতরের ডাটা রেন্ডার করবে না
+      if (!isEditor) return;
 
       document.getElementById('cnt-total').innerText = data.counts.total;
       document.getElementById('cnt-prog').innerText = data.counts.inProgress;
@@ -482,47 +494,36 @@
 
     function changeStatus(rowIndex, status) {
       if (!isEditor) return;
-      showLoader(true);
       if (typeof google !== 'undefined' && google.script && google.script.run) {
+        showLoader(true);
         google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).updateStatus(rowIndex, status, myPhone);
       } else {
-        fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'updateStatus', rowIndex: rowIndex, newStatus: status, userPhone: myPhone })
-        })
-        .then(res => res.json())
-        .then(onDataLoaded)
-        .catch(onError);
+        callApi({ action: 'updateStatus', rowIndex: rowIndex, newStatus: status, userPhone: myPhone }, onDataLoaded);
       }
     }
 
     function submitAccessRequest(e) {
       e.preventDefault();
       const name = document.getElementById('req-name').value.trim();
-      const phone = document.getElementById('req-phone').value.trim();
+      const email = normEmail(document.getElementById('req-phone').value);
       myName = name;
-      myPhone = phone;
+      myPhone = email;
       localStorage.setItem('tms_user_name', name);
-      localStorage.setItem('tms_user_phone', phone);
+      localStorage.setItem('tms_user_phone', email);
       localStorage.removeItem('tms_is_admin');
-      showLoader(true);
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).requestEditorAccess(name, phone);
+        showLoader(true);
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).requestEditorAccess(name, email);
       } else {
-        fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'requestAccess', name: name, phone: phone })
-        })
-        .then(res => res.json())
-        .then(onDataLoaded)
-        .catch(onError);
+        callApi({ action: 'requestAccess', name: name, phone: email }, onDataLoaded);
       }
     }
 
     // Admin Control Functions
     function openAdminModal() {
       if (localStorage.getItem('tms_is_admin') === 'true' && myPhone === ADMIN_SECRET) {
+        document.getElementById('admin-pin-input').value = ADMIN_SECRET;
         document.getElementById('admin-user-list').style.display = 'block';
         renderAdminUserList();
       }
@@ -547,13 +548,14 @@
     function renderAdminUserList() {
       const container = document.getElementById('admin-user-list');
       if (allUsers.length === 0) {
-        container.innerHTML = '<div style="font-size:0.8rem; color:#64748b; text-align:center;">No user requests yet.</div>';
+        container.innerHTML = '<div style="font-size:0.8rem; color:#64748b; text-align:center; padding:10px;">No user requests yet.</div>';
         return;
       }
       container.innerHTML = allUsers.map(u => `
         <div class="user-row">
           <div>
-            <div style="font-weight:700; font-size:0.85rem;">${u.name} (${u.phone})</div>
+            <div style="font-weight:700; font-size:0.85rem;">${u.name}</div>
+            <div style="font-size:0.75rem; color:#0284c7;">${u.phone}</div>
             <div style="font-size:0.72rem; color:#64748b;">Status: <b>${u.status}</b> | ${u.date}</div>
           </div>
           <div style="display:flex; gap:6px;">
@@ -564,21 +566,15 @@
       `).join('');
     }
 
-    function adminChangeRole(targetPhone, newRole) {
+    function adminChangeRole(targetEmail, newRole) {
       const pin = document.getElementById('admin-pin-input').value.trim() || myPhone;
       if (pin !== ADMIN_SECRET) { alert('Please enter valid Admin PIN first!'); return; }
-      showLoader(true);
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).adminUpdateUser(pin, targetPhone, newRole);
+        showLoader(true);
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).adminUpdateUser(pin, targetEmail, newRole);
       } else {
-        fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'adminUpdateUser', adminPin: pin, targetPhone: targetPhone, newRole: newRole })
-        })
-        .then(res => res.json())
-        .then(onDataLoaded)
-        .catch(onError);
+        callApi({ action: 'adminUpdateUser', adminPin: pin, targetPhone: targetEmail, newRole: newRole }, onDataLoaded);
       }
     }
 
@@ -594,18 +590,12 @@
       const rowIndex = parseInt(document.getElementById('edit-assign-row').value, 10);
       const newAssign = document.getElementById('edit-assign-input').value;
       closeAssignModal();
-      showLoader(true);
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
+        showLoader(true);
         google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).updateAssign(rowIndex, newAssign, myPhone);
       } else {
-        fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'updateAssign', rowIndex: rowIndex, newAssign: newAssign, userPhone: myPhone })
-        })
-        .then(res => res.json())
-        .then(onDataLoaded)
-        .catch(onError);
+        callApi({ action: 'updateAssign', rowIndex: rowIndex, newAssign: newAssign, userPhone: myPhone }, onDataLoaded);
       }
     }
 
@@ -624,18 +614,12 @@
         comments: form.comments.value
       };
       closeModal();
-      showLoader(true);
       
       if (typeof google !== 'undefined' && google.script && google.script.run) {
+        showLoader(true);
         google.script.run.withSuccessHandler(res => { form.reset(); onDataLoaded(res); }).withFailureHandler(onError).addNewTask(data, myPhone);
       } else {
-        fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action: 'addNewTask', form: data, userPhone: myPhone })
-        })
-        .then(res => res.json())
-        .then(res => { form.reset(); onDataLoaded(res); })
-        .catch(onError);
+        callApi({ action: 'addNewTask', form: JSON.stringify(data), userPhone: myPhone }, res => { form.reset(); onDataLoaded(res); });
       }
     }
 
