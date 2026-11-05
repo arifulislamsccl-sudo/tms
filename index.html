@@ -5,12 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#1e293b">
   <title>Task Management System by Arif</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="TMS Arif">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: #e2e8f0; color: #0f172a; padding-bottom: 90px; }
@@ -75,7 +69,9 @@
     .status-todo { background: #64748b; color: #ffffff; }
     
     .desc { font-size: 0.92rem; font-weight: 600; line-height: 1.45; color: #0f172a; margin-bottom: 10px; }
-    .meta { font-size: 0.78rem; color: #334155; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 12px; }
+    .meta { font-size: 0.78rem; color: #334155; margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .btn-edit-assign { background: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; margin-left: 4px; }
+    
     .date-log { background: rgba(255,255,255,0.75); border: 1px dashed rgba(0,0,0,0.2); border-radius: 6px; padding: 6px 10px; font-size: 0.73rem; color: #1e293b; margin-bottom: 10px; line-height: 1.5; }
     
     /* Action Buttons inside Card */
@@ -85,14 +81,14 @@
     .btn-hold { background: #ffffff; color: #7e22ce; border: 1px solid #a855f7; }
     .btn-done { background: #ffffff; color: #15803d; border: 1px solid #22c55e; }
     
-    /* Disabled state for Completed tasks */
+    /* Disabled state for buttons */
     .btn-act:disabled {
       background: rgba(255,255,255,0.45);
       color: #94a3b8;
       border-color: #cbd5e1;
       cursor: not-allowed;
       box-shadow: none;
-      opacity: 0.6;
+      opacity: 0.55;
     }
     
     /* Floating Add Button */
@@ -106,6 +102,10 @@
     .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
     .btn-submit { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; margin-top: 10px; cursor: pointer; }
     
+    .chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 16px; padding: 5px 11px; font-size: 0.75rem; font-weight: 600; color: #334155; cursor: pointer; }
+    .chip:active { background: #0284c7; color: white; }
+
     .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.75); color: white; z-index: 300; justify-content: center; align-items: center; font-weight: 600; font-size: 0.95rem; }
   </style>
 </head>
@@ -146,6 +146,7 @@
 
   <div class="fab" onclick="openModal()">+</div>
 
+  <!-- Add New Task Modal -->
   <div class="modal" id="task-modal">
     <div class="modal-content">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -188,9 +189,29 @@
     </div>
   </div>
 
+  <!-- Edit Assign Group Modal (Only for To Do tasks) -->
+  <div class="modal" id="assign-modal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3>Edit Assign Group</h3>
+        <span style="font-size:1.4rem; cursor:pointer; padding:4px;" onclick="closeAssignModal()">✕</span>
+      </div>
+      <form onsubmit="submitAssignUpdate(event)">
+        <input type="hidden" id="edit-assign-row">
+        <div class="form-group">
+          <label>Select or Type Assign Group</label>
+          <input type="text" id="edit-assign-input" list="assign-list" required placeholder="e.g. Mohiuddin, Sumon, Lablu...">
+          <div class="chip-list" id="assign-chips"></div>
+        </div>
+        <button type="submit" class="btn-submit">Update Assign</button>
+      </form>
+    </div>
+  </div>
+
   <div class="loading-overlay" id="loader">🔄 Updating Sheet...</div>
 
   <script>
+    // আপনার নতুন Deployment ID সহ আপডেট করা লিংক
     const API_URL = "https://script.google.com/macros/s/AKfycbyuBzd3SIWpXY8pPfOe_zs6dcEAC9c4TEJERSdNY5L1aShUEqSP1E28DYTEe4LyHB6B/exec";
     
     let allTasks = [];
@@ -200,30 +221,20 @@
       fetchData();
     };
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-
-    // Data is always read/written through the Apps Script URL (works outside Google)
-    function apiGet() {
-      return fetch(API_URL + "?action=api&t=" + Date.now()).then(res => res.json());
-    }
-    function apiPost(payload) {
-      // text/plain body = no CORS preflight, which Apps Script cannot answer
-      return fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      }).then(res => res.json());
-    }
-
     function showLoader(show) {
       document.getElementById('loader').style.display = show ? 'flex' : 'none';
     }
 
     function fetchData() {
       showLoader(true);
-      apiGet().then(onDataLoaded).catch(onError);
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).getInitialData();
+      } else {
+        fetch(API_URL + "?action=api")
+          .then(res => res.json())
+          .then(onDataLoaded)
+          .catch(onError);
+      }
     }
 
     function onDataLoaded(data) {
@@ -248,7 +259,6 @@
       });
       unitSelect.value = prevUnit;
 
-      // Populate Assign Group & Responsible Person dropdown lists dynamically
       const assignSet = new Set();
       const officerSet = new Set();
       allTasks.forEach(t => {
@@ -257,9 +267,13 @@
       });
 
       const assignDatalist = document.getElementById('assign-list');
+      const assignChips = document.getElementById('assign-chips');
       assignDatalist.innerHTML = '';
+      assignChips.innerHTML = '';
       Array.from(assignSet).sort().forEach(a => {
         assignDatalist.innerHTML += `<option value="${a}">`;
+        const safeVal = a.replace(/'/g, "\\'");
+        assignChips.innerHTML += `<span class="chip" onclick="document.getElementById('edit-assign-input').value='${safeVal}'">${a}</span>`;
       });
 
       const officerDatalist = document.getElementById('officer-list');
@@ -303,16 +317,26 @@
       container.innerHTML = filtered.map(t => {
         let cardClass = '';
         let badgeClass = 'status-todo';
+        
+        const isTodo = (t.status === 'To Do' || !t.status);
+        const isInProgress = (t.status === 'In Progress');
+        const isHold = (t.status === 'Hold');
         const isCompleted = (t.status === 'Completed');
 
-        if (t.status === 'In Progress') { cardClass = 'in-progress'; badgeClass = 'status-in-progress'; }
-        else if (t.status === 'Hold') { cardClass = 'hold'; badgeClass = 'status-hold'; }
+        if (isInProgress) { cardClass = 'in-progress'; badgeClass = 'status-in-progress'; }
+        else if (isHold) { cardClass = 'hold'; badgeClass = 'status-hold'; }
         else if (isCompleted) { cardClass = 'completed'; badgeClass = 'status-completed'; }
+
+        const disableProg = isInProgress || isCompleted;
+        const disableHold = isHold || isCompleted;
+        const disableDone = isCompleted;
 
         let dateLogs = [];
         if (t.inProgressDate) dateLogs.push(`<b>In Progress:</b> ${t.inProgressDate.replace(/\n/g, ', ')}`);
         if (t.holdDate) dateLogs.push(`<b>Hold:</b> ${t.holdDate.replace(/\n/g, ', ')}`);
         if (t.completedDate) dateLogs.push(`<b>Completed:</b> ${t.completedDate}`);
+
+        const safeAssign = (t.assignGroup || '').replace(/'/g, "\\'");
 
         return `
           <div class="card ${cardClass}">
@@ -324,14 +348,17 @@
             <div class="desc">${t.desc}</div>
             <div class="meta">
               ${t.person ? `<span>👤 <b>Officer:</b> ${t.person}</span>` : ''}
-              <span>👷 <b>Assign:</b> ${t.assignGroup || 'Unassigned'}</span>
+              <span>
+                👷 <b>Assign:</b> ${t.assignGroup || 'Unassigned'}
+                ${isTodo ? `<button class="btn-edit-assign" onclick="openAssignModal(${t.rowIndex}, '${safeAssign}')">✏️ Edit</button>` : ''}
+              </span>
             </div>
             ${dateLogs.length ? `<div class="date-log">📅 ${dateLogs.join('<br>📅 ')}</div>` : ''}
             ${t.comments ? `<div style="font-size:0.75rem; color:#b91c1c; font-weight:600; margin-bottom:8px;">💬 ${t.comments}</div>` : ''}
             <div class="actions">
-              <button class="btn-act btn-prog" ${isCompleted ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'In Progress')">▶ In Progress</button>
-              <button class="btn-act btn-hold" ${isCompleted ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'Hold')">⏸ Hold</button>
-              <button class="btn-act btn-done" ${isCompleted ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'Completed')">✔ Complete</button>
+              <button class="btn-act btn-prog" ${disableProg ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'In Progress')">▶ In Progress</button>
+              <button class="btn-act btn-hold" ${disableHold ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'Hold')">⏸ Hold</button>
+              <button class="btn-act btn-done" ${disableDone ? 'disabled' : ''} onclick="changeStatus(${t.rowIndex}, 'Completed')">✔ Complete</button>
             </div>
           </div>
         `;
@@ -340,8 +367,47 @@
 
     function changeStatus(rowIndex, status) {
       showLoader(true);
-      apiPost({ action: 'updateStatus', rowIndex: rowIndex, newStatus: status })
-        .then(onDataLoaded).catch(onError);
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).updateStatus(rowIndex, status);
+      } else {
+        fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'updateStatus', rowIndex: rowIndex, newStatus: status })
+        })
+        .then(res => res.json())
+        .then(onDataLoaded)
+        .catch(onError);
+      }
+    }
+
+    function openAssignModal(rowIndex, currentAssign) {
+      document.getElementById('edit-assign-row').value = rowIndex;
+      document.getElementById('edit-assign-input').value = currentAssign;
+      document.getElementById('assign-modal').style.display = 'flex';
+    }
+
+    function closeAssignModal() {
+      document.getElementById('assign-modal').style.display = 'none';
+    }
+
+    function submitAssignUpdate(e) {
+      e.preventDefault();
+      const rowIndex = parseInt(document.getElementById('edit-assign-row').value, 10);
+      const newAssign = document.getElementById('edit-assign-input').value;
+      closeAssignModal();
+      showLoader(true);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).updateAssign(rowIndex, newAssign);
+      } else {
+        fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'updateAssign', rowIndex: rowIndex, newAssign: newAssign })
+        })
+        .then(res => res.json())
+        .then(onDataLoaded)
+        .catch(onError);
+      }
     }
 
     function openModal() { document.getElementById('task-modal').style.display = 'flex'; }
@@ -361,15 +427,22 @@
       closeModal();
       showLoader(true);
       
-      apiPost({ action: 'addNewTask', form: data })
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(res => { form.reset(); onDataLoaded(res); }).withFailureHandler(onError).addNewTask(data);
+      } else {
+        fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'addNewTask', form: data })
+        })
+        .then(res => res.json())
         .then(res => { form.reset(); onDataLoaded(res); })
         .catch(onError);
+      }
     }
 
     function onError(err) {
       showLoader(false);
-      console.error(err);
-      alert('Connection error!\n\n১. ইন্টারনেট চেক করুন\n২. Apps Script Deploy-এ "Who has access" = Anyone আছে কিনা দেখুন\n৩. index.html-এর API_URL সঠিক /exec লিংক কিনা দেখুন');
+      alert('Connection error! Please check internet or deployment.');
     }
   </script>
 </body>
