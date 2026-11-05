@@ -9,16 +9,50 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: #e2e8f0; color: #0f172a; padding-bottom: 90px; }
     
+    /* Full Screen Lock for Unauthorized Users */
+    .lock-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0f172a;
+      color: white;
+      z-index: 250;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+    .lock-card {
+      background: #ffffff;
+      color: #0f172a;
+      width: 100%;
+      max-width: 380px;
+      border-radius: 16px;
+      padding: 24px 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+    .lock-icon { font-size: 2.6rem; margin-bottom: 8px; }
+    .lock-card h3 { font-size: 1.15rem; margin-bottom: 6px; color: #1e293b; }
+    .lock-card p { font-size: 0.8rem; color: #64748b; margin-bottom: 16px; line-height: 1.4; }
+    .pending-box { display: none; background: #fef9c3; border: 1px solid #fde047; color: #854d0e; padding: 12px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; margin-bottom: 16px; line-height: 1.4; }
+    .blocked-box { display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 0.82rem; font-weight: 600; margin-bottom: 16px; }
+
     /* Header & Stats */
-    .header { background: #1e293b; color: white; padding: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-    .header h2 { font-size: 1.05rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-    .refresh-btn { background: rgba(255,255,255,0.15); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
-    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+    .header { background: #1e293b; color: white; padding: 14px 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .header-top { display: flex; justify-content: space-between; align-items: center; }
+    .header h2 { font-size: 1rem; font-weight: 600; }
+    .header-btns { display: flex; gap: 6px; align-items: center; }
+    .top-btn { background: rgba(255,255,255,0.15); padding: 5px 9px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; font-weight: 600; }
+    
+    .role-bar { margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.08); }
+    .role-badge { padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 0.68rem; background: #22c55e; color: white; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
     .stat-card { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 6px; text-align: center; }
     .stat-card .num { font-size: 1.05rem; font-weight: bold; }
     .stat-card .label { font-size: 0.65rem; color: #94a3b8; }
     
-    /* Filters */
     .filter-bar { padding: 12px 14px; background: white; border-bottom: 1px solid #cbd5e1; display: flex; gap: 8px; }
     .filter-bar input, .filter-bar select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem; outline: none; background: #f8fafc; }
     
@@ -26,38 +60,11 @@
     .tab { padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569; white-space: nowrap; cursor: pointer; border: 1px solid #cbd5e1; }
     .tab.active { background: #0f172a; color: white; border-color: #0f172a; }
     
-    /* Task Cards - Full Colored Backgrounds */
     .task-list { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
-    
-    .card { 
-      background: #ffffff; 
-      border-radius: 12px; 
-      padding: 14px; 
-      box-shadow: 0 2px 5px rgba(0,0,0,0.08); 
-      border: 1px solid #cbd5e1;
-      border-left: 6px solid #64748b; 
-    }
-    
-    /* In Progress = Light Yellow */
-    .card.in-progress { 
-      background: #fef9c3; 
-      border-color: #fde047;
-      border-left: 6px solid #ca8a04; 
-    }
-    
-    /* Hold = Light Purple */
-    .card.hold { 
-      background: #f3e8ff; 
-      border-color: #d8b4fe;
-      border-left: 6px solid #9333ea; 
-    }
-    
-    /* Completed = Light Green */
-    .card.completed { 
-      background: #dcfce7; 
-      border-color: #86efac;
-      border-left: 6px solid #16a34a; 
-    }
+    .card { background: #ffffff; border-radius: 12px; padding: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); border: 1px solid #cbd5e1; border-left: 6px solid #64748b; }
+    .card.in-progress { background: #fef9c3; border-color: #fde047; border-left: 6px solid #ca8a04; }
+    .card.hold { background: #f3e8ff; border-color: #d8b4fe; border-left: 6px solid #9333ea; }
+    .card.completed { background: #dcfce7; border-color: #86efac; border-left: 6px solid #16a34a; }
     
     .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .badge { font-size: 0.72rem; padding: 4px 10px; border-radius: 12px; font-weight: 700; }
@@ -74,77 +81,132 @@
     
     .date-log { background: rgba(255,255,255,0.75); border: 1px dashed rgba(0,0,0,0.2); border-radius: 6px; padding: 6px 10px; font-size: 0.73rem; color: #1e293b; margin-bottom: 10px; line-height: 1.5; }
     
-    /* Action Buttons inside Card */
     .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 10px; }
     .btn-act { padding: 9px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .btn-prog { background: #ffffff; color: #b45309; border: 1px solid #f59e0b; }
     .btn-hold { background: #ffffff; color: #7e22ce; border: 1px solid #a855f7; }
     .btn-done { background: #ffffff; color: #15803d; border: 1px solid #22c55e; }
     
-    /* Disabled state for buttons */
-    .btn-act:disabled {
-      background: rgba(255,255,255,0.45);
-      color: #94a3b8;
-      border-color: #cbd5e1;
-      cursor: not-allowed;
-      box-shadow: none;
-      opacity: 0.55;
-    }
+    .btn-act:disabled { background: rgba(255,255,255,0.45); color: #94a3b8; border-color: #cbd5e1; cursor: not-allowed; box-shadow: none; opacity: 0.55; }
     
-    /* Floating Add Button */
     .fab { position: fixed; bottom: 22px; right: 22px; width: 56px; height: 56px; border-radius: 50%; background: #0284c7; color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 12px rgba(2,132,199,0.5); cursor: pointer; z-index: 150; }
     
-    /* Modal */
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: flex-end; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; align-items: flex-end; }
     .modal-content { background: white; width: 100%; border-radius: 20px 20px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
-    .form-group { margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; text-align: left; }
     .form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 4px; }
     .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
-    .btn-submit { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; margin-top: 10px; cursor: pointer; }
+    .btn-submit { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; margin-top: 8px; cursor: pointer; }
     
     .chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .chip { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 16px; padding: 5px 11px; font-size: 0.75rem; font-weight: 600; color: #334155; cursor: pointer; }
-    .chip:active { background: #0284c7; color: white; }
+    
+    .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; background: #f8fafc; }
+    .btn-sm { padding: 5px 10px; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; color: white; }
 
-    .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.75); color: white; z-index: 300; justify-content: center; align-items: center; font-weight: 600; font-size: 0.95rem; }
+    .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.85); color: white; z-index: 400; justify-content: center; align-items: center; font-weight: 600; font-size: 0.95rem; }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <h2>
-      <span>🏭 Task Management System by Arif</span>
-      <span class="refresh-btn" onclick="fetchData()">🔄 Refresh</span>
-    </h2>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="num" id="cnt-total">0</div><div class="label">Total</div></div>
-      <div class="stat-card"><div class="num" id="cnt-prog" style="color:#fde047;">0</div><div class="label">Prog</div></div>
-      <div class="stat-card"><div class="num" id="cnt-hold" style="color:#d8b4fe;">0</div><div class="label">Hold</div></div>
-      <div class="stat-card"><div class="num" id="cnt-done" style="color:#86efac;">0</div><div class="label">Done</div></div>
-      <div class="stat-card"><div class="num" id="cnt-pending" style="color:#cbd5e1;">0</div><div class="label">To-Do</div></div>
+  <!-- 🔒 FULL SCREEN LOCK FOR UNAUTHORIZED USERS -->
+  <div class="lock-screen" id="lock-screen">
+    <div class="lock-card">
+      <div class="lock-icon">🔒</div>
+      <h3>Task Management System</h3>
+      <p>Restricted Access. Only authorized users approved by Admin can view or update tasks.</p>
+
+      <!-- Shown when user already sent a request and is waiting -->
+      <div class="pending-box" id="pending-box">
+        ⏳ Your request is waiting for Admin approval.<br>
+        <button type="button" onclick="fetchData()" style="margin-top:8px; padding:6px 12px; background:#ca8a04; color:white; border:none; border-radius:6px; font-weight:600; cursor:pointer;">🔄 Check Approval Status</button>
+      </div>
+
+      <!-- Shown if user is blocked -->
+      <div class="blocked-box" id="blocked-box">
+        🚫 Your access has been restricted by Admin.
+      </div>
+
+      <form onsubmit="submitAccessRequest(event)">
+        <div class="form-group">
+          <label>Your Name</label>
+          <input type="text" id="req-name" required placeholder="e.g. Mohiuddin, Sumon...">
+        </div>
+        <div class="form-group">
+          <label>Mobile Number / ID</label>
+          <input type="text" id="req-phone" required placeholder="e.g. 017XXXXXXXX">
+        </div>
+        <button type="submit" class="btn-submit">🔑 Request Access / Login</button>
+      </form>
+
+      <div style="margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <span style="font-size: 0.78rem; color: #64748b; cursor: pointer; font-weight: 600;" onclick="openAdminModal()">👑 Admin Login</span>
+      </div>
     </div>
   </div>
 
-  <div class="filter-bar">
-    <input type="text" id="search-input" placeholder="🔍 Search task, Sr. or name..." oninput="renderTasks()">
-    <select id="unit-filter" onchange="renderTasks()">
-      <option value="">All Units</option>
-    </select>
+  <!-- ✅ MAIN APP (HIDDEN UNTIL AUTHORIZED) -->
+  <div id="main-app" style="display: none;">
+    <div class="header">
+      <div class="header-top">
+        <h2>🏭 Task Management System</h2>
+        <div class="header-btns">
+          <span class="top-btn" onclick="openAdminModal()">👑 Admin</span>
+          <span class="top-btn" onclick="fetchData()">🔄 Refresh</span>
+        </div>
+      </div>
+
+      <div class="role-bar">
+        <div id="user-info-text">👤 Authorized User</div>
+        <span id="role-badge" class="role-badge">Approved</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="num" id="cnt-total">0</div><div class="label">Total</div></div>
+        <div class="stat-card"><div class="num" id="cnt-prog" style="color:#fde047;">0</div><div class="label">Prog</div></div>
+        <div class="stat-card"><div class="num" id="cnt-hold" style="color:#d8b4fe;">0</div><div class="label">Hold</div></div>
+        <div class="stat-card"><div class="num" id="cnt-done" style="color:#86efac;">0</div><div class="label">Done</div></div>
+        <div class="stat-card"><div class="num" id="cnt-pending" style="color:#cbd5e1;">0</div><div class="label">To-Do</div></div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="search-input" placeholder="🔍 Search task, Sr. or name..." oninput="renderTasks()">
+      <select id="unit-filter" onchange="renderTasks()">
+        <option value="">All Units</option>
+      </select>
+    </div>
+
+    <div class="status-tabs">
+      <div class="tab active" onclick="setTab('All', this)">All</div>
+      <div class="tab" onclick="setTab('In Progress', this)">🟨 In Progress</div>
+      <div class="tab" onclick="setTab('Hold', this)">🟪 Hold</div>
+      <div class="tab" onclick="setTab('To Do', this)">⬜ To Do</div>
+      <div class="tab" onclick="setTab('Completed', this)">🟩 Completed</div>
+    </div>
+
+    <div class="task-list" id="task-container"></div>
+
+    <div class="fab" onclick="openModal()">+</div>
   </div>
 
-  <div class="status-tabs">
-    <div class="tab active" onclick="setTab('All', this)">All</div>
-    <div class="tab" onclick="setTab('In Progress', this)">🟨 In Progress</div>
-    <div class="tab" onclick="setTab('Hold', this)">🟪 Hold</div>
-    <div class="tab" onclick="setTab('To Do', this)">⬜ To Do</div>
-    <div class="tab" onclick="setTab('Completed', this)">🟩 Completed</div>
+  <!-- Admin Approval Modal (For Arif) -->
+  <div class="modal" id="admin-modal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3>👑 Admin Permission Control</h3>
+        <span style="font-size:1.4rem; cursor:pointer;" onclick="closeAdminModal()">✕</span>
+      </div>
+      <div class="form-group">
+        <label>Enter Admin PIN</label>
+        <div style="display:flex; gap:8px;">
+          <input type="password" id="admin-pin-input" placeholder="Enter Admin PIN">
+          <button type="button" class="btn-submit" style="margin-top:0; width:auto; padding:0 16px;" onclick="unlockAdminAsEditor()">Unlock</button>
+        </div>
+      </div>
+      <div id="admin-user-list" style="margin-top:14px; display:none;"></div>
+    </div>
   </div>
-
-  <div class="task-list" id="task-container">
-    <div style="text-align:center; padding: 40px; color:#64748b;">Loading tasks...</div>
-  </div>
-
-  <div class="fab" onclick="openModal()">+</div>
 
   <!-- Add New Task Modal -->
   <div class="modal" id="task-modal">
@@ -189,7 +251,7 @@
     </div>
   </div>
 
-  <!-- Edit Assign Group Modal (Only for To Do tasks) -->
+  <!-- Edit Assign Group Modal -->
   <div class="modal" id="assign-modal">
     <div class="modal-content">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -208,16 +270,22 @@
     </div>
   </div>
 
-  <div class="loading-overlay" id="loader">🔄 Updating Sheet...</div>
+  <div class="loading-overlay" id="loader">🔄 Loading...</div>
 
   <script>
-    // আপনার নতুন Deployment ID সহ আপডেট করা লিংক
     const API_URL = "https://script.google.com/macros/s/AKfycbyuBzd3SIWpXY8pPfOe_zs6dcEAC9c4TEJERSdNY5L1aShUEqSP1E28DYTEe4LyHB6B/exec";
+    const ADMIN_SECRET = "1234"; // আপনার অ্যাডমিন পিন
     
     let allTasks = [];
+    let allUsers = [];
     let currentTab = 'All';
+    let myPhone = localStorage.getItem('tms_user_phone') || '';
+    let myName = localStorage.getItem('tms_user_name') || '';
+    let isEditor = false;
 
     window.onload = function() {
+      document.getElementById('req-name').value = myName;
+      document.getElementById('req-phone').value = myPhone;
       fetchData();
     };
 
@@ -237,10 +305,56 @@
       }
     }
 
+    function checkMyPermission() {
+      isEditor = false;
+      const pendingBox = document.getElementById('pending-box');
+      const blockedBox = document.getElementById('blocked-box');
+      pendingBox.style.display = 'none';
+      blockedBox.style.display = 'none';
+
+      if (myPhone) {
+        if (localStorage.getItem('tms_is_admin') === 'true' && myPhone === ADMIN_SECRET) {
+          isEditor = true;
+          document.getElementById('user-info-text').innerText = "👑 Admin: Arif";
+          document.getElementById('role-badge').innerText = "Admin";
+        } else {
+          const found = allUsers.find(u => u.phone === myPhone);
+          if (found) {
+            myName = found.name;
+            if (found.status === 'Approved') {
+              isEditor = true;
+              document.getElementById('user-info-text').innerText = "👤 " + myName + " (" + myPhone + ")";
+              document.getElementById('role-badge').innerText = "Authorized";
+            } else if (found.status === 'Pending') {
+              pendingBox.style.display = 'block';
+            } else if (found.status === 'Blocked') {
+              blockedBox.style.display = 'block';
+            }
+          }
+        }
+      }
+
+      // যদি পারমিশন না থাকে, তবে মেইন অ্যাপ পুরোপুরি লুকিয়ে লক স্ক্রিন দেখাবে
+      if (isEditor) {
+        document.getElementById('lock-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+      } else {
+        document.getElementById('main-app').style.display = 'none';
+        document.getElementById('task-container').innerHTML = '';
+        document.getElementById('lock-screen').style.display = 'flex';
+      }
+    }
+
     function onDataLoaded(data) {
       showLoader(false);
       allTasks = data.tasks || [];
+      allUsers = data.users || [];
       
+      checkMyPermission();
+      renderAdminUserList();
+
+      if (!isEditor) return; // পারমিশন না থাকলে ভেতরের ডাটা রেন্ডার করবে না
+
       document.getElementById('cnt-total').innerText = data.counts.total;
       document.getElementById('cnt-prog').innerText = data.counts.inProgress;
       document.getElementById('cnt-hold').innerText = data.counts.hold;
@@ -293,6 +407,7 @@
     }
 
     function renderTasks() {
+      if (!isEditor) return;
       const search = document.getElementById('search-input').value.toLowerCase();
       const selectedUnit = document.getElementById('unit-filter').value;
       const container = document.getElementById('task-container');
@@ -366,13 +481,100 @@
     }
 
     function changeStatus(rowIndex, status) {
+      if (!isEditor) return;
       showLoader(true);
       if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).updateStatus(rowIndex, status);
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).updateStatus(rowIndex, status, myPhone);
       } else {
         fetch(API_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'updateStatus', rowIndex: rowIndex, newStatus: status })
+          body: JSON.stringify({ action: 'updateStatus', rowIndex: rowIndex, newStatus: status, userPhone: myPhone })
+        })
+        .then(res => res.json())
+        .then(onDataLoaded)
+        .catch(onError);
+      }
+    }
+
+    function submitAccessRequest(e) {
+      e.preventDefault();
+      const name = document.getElementById('req-name').value.trim();
+      const phone = document.getElementById('req-phone').value.trim();
+      myName = name;
+      myPhone = phone;
+      localStorage.setItem('tms_user_name', name);
+      localStorage.setItem('tms_user_phone', phone);
+      localStorage.removeItem('tms_is_admin');
+      showLoader(true);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).requestEditorAccess(name, phone);
+      } else {
+        fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'requestAccess', name: name, phone: phone })
+        })
+        .then(res => res.json())
+        .then(onDataLoaded)
+        .catch(onError);
+      }
+    }
+
+    // Admin Control Functions
+    function openAdminModal() {
+      if (localStorage.getItem('tms_is_admin') === 'true' && myPhone === ADMIN_SECRET) {
+        document.getElementById('admin-user-list').style.display = 'block';
+        renderAdminUserList();
+      }
+      document.getElementById('admin-modal').style.display = 'flex';
+    }
+    function closeAdminModal() { document.getElementById('admin-modal').style.display = 'none'; }
+
+    function unlockAdminAsEditor() {
+      const pin = document.getElementById('admin-pin-input').value.trim();
+      if (pin !== ADMIN_SECRET) {
+        alert('Invalid Admin PIN!');
+        return;
+      }
+      myPhone = pin;
+      localStorage.setItem('tms_user_phone', pin);
+      localStorage.setItem('tms_is_admin', 'true');
+      document.getElementById('admin-user-list').style.display = 'block';
+      renderAdminUserList();
+      fetchData();
+    }
+
+    function renderAdminUserList() {
+      const container = document.getElementById('admin-user-list');
+      if (allUsers.length === 0) {
+        container.innerHTML = '<div style="font-size:0.8rem; color:#64748b; text-align:center;">No user requests yet.</div>';
+        return;
+      }
+      container.innerHTML = allUsers.map(u => `
+        <div class="user-row">
+          <div>
+            <div style="font-weight:700; font-size:0.85rem;">${u.name} (${u.phone})</div>
+            <div style="font-size:0.72rem; color:#64748b;">Status: <b>${u.status}</b> | ${u.date}</div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            ${u.status !== 'Approved' ? `<button class="btn-sm" style="background:#16a34a;" onclick="adminChangeRole('${u.phone}', 'Approved')">✔ Approve</button>` : ''}
+            ${u.status !== 'Blocked' ? `<button class="btn-sm" style="background:#dc2626;" onclick="adminChangeRole('${u.phone}', 'Blocked')">✖ Block</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function adminChangeRole(targetPhone, newRole) {
+      const pin = document.getElementById('admin-pin-input').value.trim() || myPhone;
+      if (pin !== ADMIN_SECRET) { alert('Please enter valid Admin PIN first!'); return; }
+      showLoader(true);
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).adminUpdateUser(pin, targetPhone, newRole);
+      } else {
+        fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'adminUpdateUser', adminPin: pin, targetPhone: targetPhone, newRole: newRole })
         })
         .then(res => res.json())
         .then(onDataLoaded)
@@ -385,10 +587,7 @@
       document.getElementById('edit-assign-input').value = currentAssign;
       document.getElementById('assign-modal').style.display = 'flex';
     }
-
-    function closeAssignModal() {
-      document.getElementById('assign-modal').style.display = 'none';
-    }
+    function closeAssignModal() { document.getElementById('assign-modal').style.display = 'none'; }
 
     function submitAssignUpdate(e) {
       e.preventDefault();
@@ -398,11 +597,11 @@
       showLoader(true);
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).updateAssign(rowIndex, newAssign);
+        google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onError).updateAssign(rowIndex, newAssign, myPhone);
       } else {
         fetch(API_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'updateAssign', rowIndex: rowIndex, newAssign: newAssign })
+          body: JSON.stringify({ action: 'updateAssign', rowIndex: rowIndex, newAssign: newAssign, userPhone: myPhone })
         })
         .then(res => res.json())
         .then(onDataLoaded)
@@ -428,11 +627,11 @@
       showLoader(true);
       
       if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(res => { form.reset(); onDataLoaded(res); }).withFailureHandler(onError).addNewTask(data);
+        google.script.run.withSuccessHandler(res => { form.reset(); onDataLoaded(res); }).withFailureHandler(onError).addNewTask(data, myPhone);
       } else {
         fetch(API_URL, {
           method: 'POST',
-          body: JSON.stringify({ action: 'addNewTask', form: data })
+          body: JSON.stringify({ action: 'addNewTask', form: data, userPhone: myPhone })
         })
         .then(res => res.json())
         .then(res => { form.reset(); onDataLoaded(res); })
@@ -442,7 +641,7 @@
 
     function onError(err) {
       showLoader(false);
-      alert('Connection error! Please check internet or deployment.');
+      alert('Error: ' + (err.message || 'Check connection or permission.'));
     }
   </script>
 </body>
