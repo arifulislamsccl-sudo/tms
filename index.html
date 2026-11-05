@@ -295,27 +295,27 @@
       document.getElementById('loader').style.display = show ? 'flex' : 'none';
     }
 
-    // JSONP মেথড: এতে Android APK-তে কখনোই "Failed to fetch" এরর আসবে না
+    // Dual-Mode Fetch: সরাসরি ডাটা আনবে, আর অন্য ফোনে রেসপন্স ব্লক হলে no-cors দিয়ে বাইপাস করবে
     function callApi(paramsObj, callback) {
       showLoader(true);
-      const cbName = "tms_cb_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
-      const script = document.createElement('script');
-      
-      window[cbName] = function(data) {
-        delete window[cbName];
-        if (script.parentNode) script.parentNode.removeChild(script);
-        callback(data);
-      };
-      
-      paramsObj.callback = cbName;
       const qs = Object.keys(paramsObj).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(paramsObj[k])).join("&");
-      script.src = API_URL + "?" + qs;
-      script.onerror = function() {
-        delete window[cbName];
-        if (script.parentNode) script.parentNode.removeChild(script);
-        onError({ message: "Network connection error. Please check internet." });
-      };
-      document.body.appendChild(script);
+      fetch(API_URL + "?" + qs)
+        .then(res => res.json())
+        .then(callback)
+        .catch(err => {
+          if (paramsObj.action !== 'api') {
+            fetch(API_URL + "?" + qs, { mode: 'no-cors' }).then(() => {
+              if (paramsObj.action === 'requestAccess') {
+                document.getElementById('pending-box').style.display = 'block';
+              }
+              setTimeout(fetchData, 1500);
+            }).catch(() => {
+              showLoader(false);
+            });
+          } else {
+            onError(err);
+          }
+        });
     }
 
     function fetchData() {
