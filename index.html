@@ -44,7 +44,9 @@
     .top-btn { background: rgba(255,255,255,0.15); padding: 5px 9px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; font-weight: 600; }
     
     .role-bar { margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.08); }
-    .role-badge { padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 0.68rem; background: #22c55e; color: white; }
+    .role-badge { padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 0.68rem; color: white; }
+    .badge-editor { background: #22c55e; }
+    .badge-viewer { background: #0284c7; }
 
     .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
     .stat-card { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 6px; text-align: center; }
@@ -99,8 +101,10 @@
     .chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .chip { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 16px; padding: 5px 11px; font-size: 0.75rem; font-weight: 600; color: #334155; cursor: pointer; }
     
-    .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; background: #f8fafc; }
-    .btn-sm { padding: 6px 10px; border: none; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; color: white; }
+    .user-row { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; margin-bottom: 10px; background: #f8fafc; }
+    .role-btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .btn-sm { padding: 7px 6px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; text-align: center; border: 1px solid transparent; }
+    .btn-sm:disabled { opacity: 1; cursor: default; box-shadow: inset 0 0 0 2px #0f172a; }
 
     .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.85); color: white; z-index: 400; justify-content: center; align-items: center; font-weight: 600; font-size: 0.95rem; }
   </style>
@@ -155,7 +159,7 @@
 
       <div class="role-bar">
         <div id="user-info-text">👤 Authorized User</div>
-        <span id="role-badge" class="role-badge">Approved</span>
+        <span id="role-badge" class="role-badge badge-editor">Approved</span>
       </div>
 
       <div class="stats-grid">
@@ -184,7 +188,7 @@
 
     <div class="task-list" id="task-container"></div>
 
-    <div class="fab" onclick="openModal()">+</div>
+    <div class="fab" id="add-fab" onclick="openModal()">+</div>
   </div>
 
   <!-- Admin Approval Modal -->
@@ -271,13 +275,14 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyuBzd3SIWpXY8pPfOe_zs6dcEAC9c4TEJERSdNY5L1aShUEqSP1E28DYTEe4LyHB6B/exec";
-    const ADMIN_SECRET = "12787"; // 👑 এখানে আপনার অ্যাডমিন পাসওয়ার্ড দিন
+    const ADMIN_SECRET = "12787"; // 👑 আপনার অ্যাডমিন পাসওয়ার্ড
     
     let allTasks = [];
     let allUsers = [];
     let currentTab = 'All';
     let myPhone = localStorage.getItem('tms_user_phone') || '';
     let myName = localStorage.getItem('tms_user_name') || '';
+    let canView = false;
     let isEditor = false;
 
     function normEmail(val) {
@@ -295,7 +300,6 @@
       document.getElementById('loader').style.display = show ? 'flex' : 'none';
     }
 
-    // Dual-Mode Fetch: সরাসরি ডাটা আনবে, আর অন্য ফোনে রেসপন্স ব্লক হলে no-cors দিয়ে বাইপাস করবে
     function callApi(paramsObj, callback) {
       showLoader(true);
       const qs = Object.keys(paramsObj).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(paramsObj[k])).join("&");
@@ -328,26 +332,38 @@
     }
 
     function checkMyPermission() {
+      canView = false;
       isEditor = false;
       const pendingBox = document.getElementById('pending-box');
       const blockedBox = document.getElementById('blocked-box');
+      const roleBadge = document.getElementById('role-badge');
       pendingBox.style.display = 'none';
       blockedBox.style.display = 'none';
 
       if (myPhone) {
         if (localStorage.getItem('tms_is_admin') === 'true' && myPhone === ADMIN_SECRET) {
+          canView = true;
           isEditor = true;
           document.getElementById('user-info-text').innerText = "👑 Admin: Arif";
-          document.getElementById('role-badge').innerText = "Admin";
+          roleBadge.innerText = "Admin";
+          roleBadge.className = "role-badge badge-editor";
         } else {
           const target = normEmail(myPhone);
           const found = allUsers.find(u => normEmail(u.phone) === target);
           if (found) {
             myName = found.name;
             if (found.status === 'Approved') {
+              canView = true;
               isEditor = true;
               document.getElementById('user-info-text').innerText = "👤 " + myName + " (" + myPhone + ")";
-              document.getElementById('role-badge').innerText = "Authorized";
+              roleBadge.innerText = "✏️ Editor";
+              roleBadge.className = "role-badge badge-editor";
+            } else if (found.status === 'Viewer') {
+              canView = true;
+              isEditor = false;
+              document.getElementById('user-info-text').innerText = "👁️ " + myName + " (" + myPhone + ")";
+              roleBadge.innerText = "👁️ View Only";
+              roleBadge.className = "role-badge badge-viewer";
             } else if (found.status === 'Pending') {
               pendingBox.style.display = 'block';
             } else if (found.status === 'Blocked') {
@@ -357,7 +373,11 @@
         }
       }
 
-      if (isEditor) {
+      // শুধুমাত্র Editor বা Admin হলে নতুন কাজ যোগ করার (+) বাটন দেখাবে
+      document.getElementById('add-fab').style.display = isEditor ? 'flex' : 'none';
+
+      // যদি View বা Edit পারমিশন থাকে তবেই মেইন অ্যাপ দেখাবে, নাহলে লক স্ক্রিন
+      if (canView) {
         document.getElementById('lock-screen').style.display = 'none';
         document.getElementById('main-app').style.display = 'block';
       } else {
@@ -375,7 +395,7 @@
       checkMyPermission();
       renderAdminUserList();
 
-      if (!isEditor) return;
+      if (!canView) return;
 
       document.getElementById('cnt-total').innerText = data.counts.total;
       document.getElementById('cnt-prog').innerText = data.counts.inProgress;
@@ -429,7 +449,7 @@
     }
 
     function renderTasks() {
-      if (!isEditor) return;
+      if (!canView) return;
       const search = document.getElementById('search-input').value.toLowerCase();
       const selectedUnit = document.getElementById('unit-filter').value;
       const container = document.getElementById('task-container');
@@ -464,9 +484,10 @@
         else if (isHold) { cardClass = 'hold'; badgeClass = 'status-hold'; }
         else if (isCompleted) { cardClass = 'completed'; badgeClass = 'status-completed'; }
 
-        const disableProg = isInProgress || isCompleted;
-        const disableHold = isHold || isCompleted;
-        const disableDone = isCompleted;
+        // View Only ইউজারদের জন্য সব বাটন Disable থাকবে
+        const disableProg = !isEditor || isInProgress || isCompleted;
+        const disableHold = !isEditor || isHold || isCompleted;
+        const disableDone = !isEditor || isCompleted;
 
         let dateLogs = [];
         if (t.inProgressDate) dateLogs.push(`<b>In Progress:</b> ${t.inProgressDate.replace(/\n/g, ', ')}`);
@@ -487,7 +508,7 @@
               ${t.person ? `<span>👤 <b>Officer:</b> ${t.person}</span>` : ''}
               <span>
                 👷 <b>Assign:</b> ${t.assignGroup || 'Unassigned'}
-                ${isTodo ? `<button class="btn-edit-assign" onclick="openAssignModal(${t.rowIndex}, '${safeAssign}')">✏️ Edit</button>` : ''}
+                ${(isTodo && isEditor) ? `<button class="btn-edit-assign" onclick="openAssignModal(${t.rowIndex}, '${safeAssign}')">✏️ Edit</button>` : ''}
               </span>
             </div>
             ${dateLogs.length ? `<div class="date-log">📅 ${dateLogs.join('<br>📅 ')}</div>` : ''}
@@ -555,25 +576,48 @@
       fetchData();
     }
 
+    // Admin প্যানেলে প্রতিটি ইউজারের জন্য Edit / View Only / Block ৩টি বাটন দেখানো
     function renderAdminUserList() {
       const container = document.getElementById('admin-user-list');
       if (allUsers.length === 0) {
         container.innerHTML = '<div style="font-size:0.8rem; color:#64748b; text-align:center; padding:10px;">No user requests yet.</div>';
         return;
       }
-      container.innerHTML = allUsers.map(u => `
-        <div class="user-row">
-          <div>
-            <div style="font-weight:700; font-size:0.85rem;">${u.name}</div>
-            <div style="font-size:0.75rem; color:#0284c7;">${u.phone}</div>
-            <div style="font-size:0.72rem; color:#64748b;">Status: <b>${u.status}</b> | ${u.date}</div>
+      container.innerHTML = allUsers.map(u => {
+        const isEdit = (u.status === 'Approved');
+        const isView = (u.status === 'Viewer');
+        const isBlock = (u.status === 'Blocked');
+        
+        let statusLabel = u.status;
+        if (isEdit) statusLabel = "✏️ Edit (Approved)";
+        else if (isView) statusLabel = "👁️ View Only";
+        else if (isBlock) statusLabel = "🚫 Blocked";
+
+        return `
+          <div class="user-row">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:700; font-size:0.88rem; color:#0f172a;">${u.name}</div>
+                <div style="font-size:0.75rem; color:#0284c7;">${u.phone}</div>
+              </div>
+              <div style="font-size:0.72rem; background:#e2e8f0; padding:3px 8px; border-radius:8px; font-weight:700; color:#334155;">
+                ${statusLabel}
+              </div>
+            </div>
+            <div class="role-btn-group">
+              <button class="btn-sm" style="background:${isEdit ? '#15803d' : '#dcfce7'}; color:${isEdit ? '#ffffff' : '#15803d'}; border-color:#86efac;" ${isEdit ? 'disabled' : ''} onclick="adminChangeRole('${u.phone}', 'Approved')">
+                ${isEdit ? '✔ Edit' : '✏️ Edit'}
+              </button>
+              <button class="btn-sm" style="background:${isView ? '#0369a1' : '#e0f2fe'}; color:${isView ? '#ffffff' : '#0369a1'}; border-color:#7dd3fc;" ${isView ? 'disabled' : ''} onclick="adminChangeRole('${u.phone}', 'Viewer')">
+                ${isView ? '✔ View Only' : '👁️ View Only'}
+              </button>
+              <button class="btn-sm" style="background:${isBlock ? '#b91c1c' : '#fee2e2'}; color:${isBlock ? '#ffffff' : '#b91c1c'}; border-color:#fca5a5;" ${isBlock ? 'disabled' : ''} onclick="adminChangeRole('${u.phone}', 'Blocked')">
+                ${isBlock ? '✔ Blocked' : '🚫 Block'}
+              </button>
+            </div>
           </div>
-          <div style="display:flex; gap:6px;">
-            ${u.status !== 'Approved' ? `<button class="btn-sm" style="background:#16a34a;" onclick="adminChangeRole('${u.phone}', 'Approved')">✔ Approve</button>` : ''}
-            ${u.status !== 'Blocked' ? `<button class="btn-sm" style="background:#dc2626;" onclick="adminChangeRole('${u.phone}', 'Blocked')">✖ Block</button>` : ''}
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function adminChangeRole(targetEmail, newRole) {
